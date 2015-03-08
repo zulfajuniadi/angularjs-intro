@@ -120,29 +120,36 @@ angular.module('todos', ['LocalStorageModule'])
                 this.todos = storage.all();
             },
             handleKeystrokes : function(event, todo) {
-                switch (event.keyCode) {
-                    case 13:
-                        if(!todo && this.newTodoTitle) {
-                            storage.create({title: this.newTodoTitle, done: false});
-                        } else if(todo) {
-                            storage.update(todo);
-                        }
-                    case 27:
-                        if(!todo) {
-                            this.newTodoTitle = '';
-                        } else if(todo) {
-                            todo.editingTitle = '';
+                if(todo) {
+                    switch (event.keyCode) {
+                        case 13:
                             todo.editing = false;
-                        }
-                        break;
+                            todo.title = todo.editingTitle;
+                            storage.update(todo);
+                            break;
+                        case 27:
+                            todo.editing = false;
+                            todo.editingTitle = todo.title;
+                            break;
+                    }
+                } else {
+                    switch (event.keyCode) {
+                        case 13:
+                            if(this.newTodoTitle) {
+                                storage.create({title: this.newTodoTitle, done: false});
+                            }
+                        case 27:
+                            this.newTodoTitle = '';
+                            break;
+                    }
                 }
             },
             setEditing : function (todo) {
                 todo.editingTitle = todo.title;
                 todo.editing = true;
             },
-            deleteTodo : function() {
-                storage.remove();
+            deleteTodo : function(todo) {
+                storage.remove(todo);
             },
             getIncompleted : storage.getCompletedTodos,
             clearDone : function(){
