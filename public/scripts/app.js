@@ -70,13 +70,13 @@ angular.module('todos', [])
                     case 13:
                         if(!todo && this.newTodoTitle) {
                             storage.create({title: this.newTodoTitle, done: false});
-                        } else {
+                        } else if(todo) {
                             storage.update(todo);
                         }
                     case 27:
                         if(!todo) {
                             this.newTodoTitle = '';
-                        } else {
+                        } else if(todo) {
                             todo.editingTitle = '';
                             todo.editing = false;
                         }
