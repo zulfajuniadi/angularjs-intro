@@ -1,5 +1,5 @@
-angular.module('todos', ['LocalStorageModule'])
-    .factory('arraystorage', function(){
+angular.module('todos', ['LocalStorageModule', 'firebase'])
+    .factory('arraystorage', function() {
         var todos = [
             {
                 done: false,
@@ -45,7 +45,7 @@ angular.module('todos', ['LocalStorageModule'])
         };
         return functions;
     })
-    .factory('localstorage', ['localStorageService', function(localStorageService){
+    .factory('localstorage', ['localStorageService', function(localStorageService) {
         var todos = localStorageService.get('todos') || [];
         var functions = {
             commit: function() {
@@ -89,14 +89,61 @@ angular.module('todos', ['LocalStorageModule'])
         };
         return functions;
     }])
+    .factory('firebasestorage', ['$firebaseArray', function($firebaseArray) {
+        var ref = new Firebase('https://magic-todos.firebaseio.com/todos');
+        var todos = $firebaseArray(ref);
+        var functions = {
+            commit: function(todo) {
+                todos.$save(todo);
+            },
+            all: function() {
+                return todos;
+            },
+            create: function(todo) {
+                todos.$add(todo);
+            },
+            remove: function(todo) {
+                todos.$remove(todo);
+            },
+            update: function(todo) {
+                todo.title = todo.editingTitle;
+                todos.$save(todo);
+            },
+            clearDone: function() {
+                todos.forEach(function(todo){
+                    if(todo.done) {
+                        todos.$remove(todo);
+                    }
+                });
+            },
+            getActiveTodos: function() {
+                return todos.filter(function(todo){
+                    return !todo.done;
+                });
+            },
+            getCompletedTodos: function() {
+                return todos.filter(function(todo){
+                    return !todo.done;
+                });
+            },
+            getDoneTodos: function() {
+                return todos.filter(function(todo){
+                    return todo.done;
+                });
+            }
+        };
+        return functions;
+    }])
     .factory('storage', [
         'arraystorage', 
         'localstorage', 
+        'firebasestorage', 
         function(
             arraystorage, 
-            localstorage
+            localstorage,
+            firebasestorage
         ){
-            return localstorage;
+            return firebasestorage;
         }
     ])
     .controller('TodoController', [
@@ -120,37 +167,44 @@ angular.module('todos', ['LocalStorageModule'])
                 this.todos = storage.all();
             },
             handleKeystrokes : function(event, todo) {
-                switch (event.keyCode) {
-                    case 13:
-                        if(!todo && this.newTodoTitle) {
-                            storage.create({title: this.newTodoTitle, done: false});
-                        } else if(todo) {
-                            storage.update(todo);
-                        }
-                    case 27:
-                        if(!todo) {
-                            this.newTodoTitle = '';
-                        } else if(todo) {
-                            todo.editingTitle = '';
+                if(todo) {
+                    switch (event.keyCode) {
+                        case 13:
                             todo.editing = false;
-                        }
-                        break;
+                            todo.title = todo.editingTitle;
+                            storage.update(todo);
+                            break;
+                        case 27:
+                            todo.editing = false;
+                            todo.editingTitle = todo.title;
+                            break;
+                    }
+                } else {
+                    switch (event.keyCode) {
+                        case 13:
+                            if(this.newTodoTitle) {
+                                storage.create({title: this.newTodoTitle, done: false});
+                            }
+                        case 27:
+                            this.newTodoTitle = '';
+                            break;
+                    }
                 }
             },
             setEditing : function (todo) {
                 todo.editingTitle = todo.title;
                 todo.editing = true;
             },
-            deleteTodo : function() {
-                storage.remove();
+            deleteTodo : function(todo) {
+                storage.remove(todo);
             },
             getIncompleted : storage.getCompletedTodos,
             clearDone : function(){
                 storage.clearDone();
                 this.loadTodos();
             },
-            commitTodo: function() {
-                storage.commit();
+            commitTodo: function(todo) {
+                storage.commit(todo);
             }
         });
 
