@@ -67,17 +67,20 @@ function(
         state : '',
         todosFilter : {},
         todos : [],
+        // get to-do items from storage factory
         loadTodos : function() {
             this.todos = storage.all();
         },
         handleKeystrokes : function(event, todo) {
             if(todo) {
                 switch (event.keyCode) {
+                    // 'Enter' key 
                     case 13:
                         todo.editing = false;
                         todo.title = todo.editingTitle;
                         storage.update(todo);
                         break;
+                    // 'Escape' key 
                     case 27:
                         todo.editing = false;
                         todo.editingTitle = todo.title;
@@ -109,6 +112,7 @@ function(
         }
     });
 
+    // On location change, filter different to-do items
     $window.onhashchange = function() {
         $scope.state = this.location.hash.substring(2);
         switch ($scope.state) {
